@@ -1,0 +1,66 @@
+import org.gradle.internal.os.OperatingSystem;
+
+plugins {
+    id 'org.jetbrains.kotlin.jvm' version '1.3.72'
+    id "com.github.johnrengelman.shadow" version "5.2.0"
+    id 'application'
+}
+
+group 'io.github.patarapolw'
+version '0.1'
+mainClassName = 'k_neu.AppKt'
+
+application {
+    applicationDefaultJvmArgs = []
+
+    if (OperatingSystem.current().isMacOsX()) {
+        applicationDefaultJvmArgs = ["-XstartOnFirstThread"]
+    }
+}
+
+ext {
+    osgi_platform = System.getenv('OSGI_PLATFORM')
+    swt_version = '3.114.0'
+
+    if (osgi_platform == null) {
+        if (OperatingSystem.current().isMacOsX()) {
+            osgi_platform = 'cocoa.macosx.x86_64'
+        } else if (OperatingSystem.current().isWindows()) {
+            osgi_platform = 'win32.win32.x86_64'
+        } else {
+//            osgi_platform = 'gtk.linux.ppc64le'
+            osgi_platform = 'gtk.linux.x86_64'
+        }
+    }
+}
+
+configurations.all {
+    resolutionStrategy {
+        dependencySubstitution {
+            // The maven property ${osgi.platform} is not handled by Gradle
+            // so we replace the dependency, using the osgi platform from the project settings
+            substitute module('org.eclipse.platform:org.eclipse.swt.${osgi.platform}') with module("org.eclipse.platform:org.eclipse.swt.$osgi_platform:$swt_version")
+        }
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+    implementation 'com.google.code.gson:gson:2.8.6'
+    compile group: 'org.eclipse.platform', name: "org.eclipse.swt.$osgi_platform", version: swt_version
+}
+
+compileKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
+compileTestKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
+
+shadowJar {
+    archiveClassifier = osgi_platform
+}
