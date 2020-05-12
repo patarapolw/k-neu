@@ -18,7 +18,7 @@ import kotlin.concurrent.thread
 
 data class Config (
     val title: String,
-    val url: String,
+    var url: String,
     val server: List<String>?,
     val maximized: Boolean?
 )
@@ -60,12 +60,22 @@ fun main () {
         }
     }
 
+    config.url = config.url.replace(Regex("\\$\\{([A-Za-z0-9]+)}")) {
+        System.getenv(it.groups[1]?.value ?: "") ?: ""
+    }
+
+    val url = try {
+        URL(config.url)
+    } catch (e: MalformedURLException) {
+        Paths.get(rootDirFile.toString(), config.url).toUri().toURL()
+    }
+
     thread(isDaemon = true) {
-        while (!checkUrl(config.url)) {
+        while (!checkUrl(url)) {
             Thread.sleep(1000)
         }
         Display.getDefault().asyncExec {
-            browser.url = config.url
+            browser.url = url.toString()
         }
     }
 
@@ -76,16 +86,12 @@ fun main () {
     }
 }
 
-fun checkUrl (url: String): Boolean {
+fun checkUrl (url: URL): Boolean {
     var connection: HttpURLConnection? = null
     try {
-        val u = URL(url)
-        connection = u.openConnection() as HttpURLConnection
+        connection = url.openConnection() as HttpURLConnection
         connection.requestMethod = "HEAD"
         return listOf(200, 301, 404).contains(connection.responseCode)
-    } catch (e: MalformedURLException) {
-        // TODO Auto-generated catch block
-        e.printStackTrace()
     } catch (e: IOException) {
         // TODO Auto-generated catch block
         e.printStackTrace()
