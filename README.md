@@ -20,7 +20,9 @@ Resulting build is in `/build/libs/*-${OSGI_PLATFORM}.jar`
 
 ## Personalizing the app
 
-Create [config.json](/src/main/resources/config.json) and put in alongside `*.jar`
+Get JAR files here, <https://github.com/patarapolw/k-neu/releases>
+
+Create [config.json](/src/main/resources/config.json) and put in alongside the JAR file of your OS.
 
 ```json
 {
